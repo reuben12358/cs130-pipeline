@@ -93,11 +93,11 @@ void render(driver_state& state, render_type type);
 // It will be called recursively, once for each clipping face (face=0, 1, ..., 5) to
 // clip against each of the clipping faces in turn.  When face=6, clip_triangle should
 // simply pass the call on to rasterize_triangle.
-void clip_triangle(driver_state& state, const data_geometry* in[3],int face=0);
+void clip_triangle(driver_state& state, data_geometry* in[3],int face=0);
 
 // Rasterize the triangle defined by the three vertices in the "in" array.  This
 // function is responsible for rasterization, interpolation of data to
 // fragments, calling the fragment shader, and z-buffering.
-void rasterize_triangle(driver_state& state, const data_geometry* in[3]);
+void rasterize_triangle(driver_state& state, data_geometry* in[3]);
 
 #endif

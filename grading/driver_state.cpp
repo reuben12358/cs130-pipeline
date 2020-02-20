@@ -38,7 +38,7 @@ void render(driver_state& state, render_type type)
 {
     //std::cout<<"TODO: implement rendering."<<std::endl;
     for (int i = 0; i < state.num_vertices; i += 3) {
-        const data_geometry* pass[3];
+        data_geometry* pass[3];
         for (int j = 0; j < 3; ++j) {
             data_geometry* temp_g = new data_geometry();
             temp_g -> data = state.vertex_data + (i + j)*state.floats_per_vertex;
@@ -69,7 +69,7 @@ void clip_triangle(driver_state& state, data_geometry* in[3],int face)
 // Rasterize the triangle defined by the three vertices in the "in" array.  This
 // function is responsible for rasterization, interpolation of data to
 // fragments, calling the fragment shader, and z-buffering.
-void rasterize_triangle(driver_state& state, const data_geometry* in[3])
+void rasterize_triangle(driver_state& state, data_geometry* in[3])
 {
     // std::cout<<"TODO: implement rasterization"<<std::endl;
     for (int i = 0; i < 3; ++i) {
@@ -78,11 +78,11 @@ void rasterize_triangle(driver_state& state, const data_geometry* in[3])
         vertex.data = in[i] -> data;
         state.vertex_shader(vertex, *k, state.uniform_data);
         for (int j = 0; j < 3; ++j) {
-            k -> gl_Position[j] = k -> gl_Position[j] / k -> gl_Position[3];
+            in[i] -> gl_Position[j] = in[i] -> gl_Position[j] / in[i] -> gl_Position[3];
         }
-        k -> gl_Position[0] = (k -> gl_Position[0] + 1) * (state.image_width / 2);
-        k -> gl_Position[1] = (k -> gl_Position[1] + 1) * (state.image_height / 2);
-        int temp = k->gl_Position[1] * state.image_width + k->gl_Position[0];
+        in[i] -> gl_Position[0] = (in[i] -> gl_Position[0] + 1) * (state.image_width / 2);
+        in[i] -> gl_Position[1] = (in[i] -> gl_Position[1] + 1) * (state.image_height / 2);
+        int temp = in[i]->gl_Position[1] * state.image_width + in[i]->gl_Position[0];
         state.image_color[temp] = make_pixel(255, 255, 255);
     }
 
