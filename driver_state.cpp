@@ -72,61 +72,27 @@ void clip_triangle(driver_state& state, const data_geometry* in[3], int face)
 void rasterize_triangle(driver_state& state, const data_geometry* in[3])
 {
     // std::cout<<"TODO: implement rasterization"<<std::endl;
-    data_geometry* temp_dg = new data_geometry[3];
-    data_vertex* vertex = new data_vertex[3];
+    vec3 a,b,c;
 
-    for (int i = 0; i < 3; ++i) {
-        // data_vertex vertex;
-        // const data_geometry* k = in[i];
-        // temp_dg[i] = (data_geometry*) k;
-        vertex[i].data = in[i] -> data;
+    /*ax*/ a[0] = (((in[0] -> gl_Position[0] / in[0] -> gl_Position[3]) + 1) * (state.image_width/2)) - 0.5;
+    /*ay*/ a[1] = (((in[0] -> gl_Position[1] / in[0] -> gl_Position[3]) + 1) * (state.image_height/2)) - 0.5;
+    /*az*/ a[2] = in[0] -> gl_Position[2] / in[0] -> gl_Position[3];
+    /*bx*/ b[0] = (((in[1] -> gl_Position[0] / in[1] -> gl_Position[3]) + 1) * (state.image_width/2)) - 0.5;
+    /*by*/ b[1] = (((in[1] -> gl_Position[1] / in[1] -> gl_Position[3]) + 1) * (state.image_height/2)) - 0.5;
+    /*bz*/ b[2] = in[1] -> gl_Position[2] / in[1] -> gl_Position[3];
+    /*cx*/ c[0] = (((in[2] -> gl_Position[0] / in[2] -> gl_Position[3]) + 1) * (state.image_width/2)) - 0.5;
+    /*cy*/ c[1] = (((in[2] -> gl_Position[1] / in[2] -> gl_Position[3]) + 1) * (state.image_height/2)) - 0.5;
+    /*cz*/ c[2] = in[2] -> gl_Position[2] / in[2] -> gl_Position[3];
 
-        state.vertex_shader((const data_vertex)vertex[i], temp_dg[i], state.uniform_data);
-        // for (int j = 0; j < 3; ++j) {
-        //     k -> gl_Position[j] = k -> gl_Position[j] / k -> gl_Position[3];
-        // }
-        // k -> gl_Position[0] = (k -> gl_Position[0] + 1) * (state.image_width / 2);
-        // k -> gl_Position[1] = (k -> gl_Position[1] + 1) * (state.image_height / 2);
+    float area = ((a[0] * (b[1] - c[1])) + (b[0] * (c[1] - a[1])) + (c[0] * (a[1] - b[1]))) / 2;
 
-        float x = temp_dg[i].gl_Position[0] / temp_dg[i].gl_Position[3];
-        float y = temp_dg[i].gl_Position[1] / temp_dg[i].gl_Position[3];
+    int minX = std::min(std::min(a[0], b[0]), c[0]);
+    int maxX = std::max(std::max(a[0], b[0]), c[0]);
+    int minY = std::min(std::min(a[1], b[1]), c[1]);
+    int maxY = std::max(std::max(a[1], b[1]), c[1]);
 
-        float w = state.image_width* x / 2 + (state.image_width - 1) / 2;
-        float h = state.image_height* y / 2 + (state.image_height - 1) / 2;
-
-        vertex[i].data[0] = w;
-        vertex[i].data[1] = h;
-        vertex[i].data[2] = temp_dg[i].gl_Position[2] / temp_dg[i].gl_Position[3];
-
-        int temp = h * state.image_width + w;
-        state.image_color[temp] = make_pixel(255, 255, 255);
-    }
-
-    float * a = new float[3];
-    float * b = new float[3];
-    float * c = new float[3];
-
-    a[0] = vertex[0].data[0];
-    a[1] = vertex[0].data[1];
-    a[2] = vertex[0].data[2];
-    b[0] = vertex[1].data[0];
-    b[1] = vertex[1].data[1];
-    b[2] = vertex[1].data[2];
-    c[0] = vertex[2].data[0];
-    c[1] = vertex[2].data[1];
-    c[2] = vertex[2].data[2];
-
-    float area = ((a[0] * (b[1] - c[1])) + 
-		        (b[0] * (c[1] - a[1])) + 
-		        (c[0] * (a[1] - b[1]))) / 2;
-
-//    int minX = std::min(std::min(in[0]->gl_Position[0], in[1]->gl_Position[0]), in[2]->gl_Position[0]);
-  //  int maxX = std::max(std::max(in[0]->gl_Position[0], in[1]->gl_Position[0]), in[2]->gl_Position[0]);
-    //int minY = std::min(std::min(in[0]->gl_Position[1], in[1]->gl_Position[1]), in[2]->gl_Position[1]);
-    //int maxY = std::max(std::max(in[0]->gl_Position[1], in[1]->gl_Position[1]), in[2]->gl_Position[1]);
-
-    for (int i = 0; i < state.image_width; ++i) {
-        for (int j = 0; j < state.image_width; ++j) {
+    for (int i = minX; i <= maxX; ++i) {
+        for (int j = minY; j <= maxY; ++j) {
             float bt = ((a[0] * ((float)j - c[1])) + 
           			  ((float)i * (c[1] - a[1])) + 
 			          (c[0] * (a[1] - (float)j))) / 2;
@@ -138,7 +104,33 @@ void rasterize_triangle(driver_state& state, const data_geometry* in[3])
             double gamma = y/area;
             double alpha = 1 - beta - gamma;
             if (alpha >= 0 && beta >= 0 && gamma >= 0 && (alpha + beta + gamma) <= 1.001) {
-                state.image_color[(j * state.image_width) + i] = make_pixel(255, 255, 255);
+                // implement color for test 6 onwards
+                float color[state.floats_per_vertex];
+                // calculate co-ords using method from shroeders lecture
+                for (int i = 0; i < state.floats_per_vertex; ++i) {
+                    if (state.interp_rules[i] == interp_type::flat) {
+                        color[i] = in[0] -> data[i];
+                    }
+                    else if (state.interp_rules[i] == interp_type::noperspective) {
+                        color[i] = (alpha * in[0] -> data[i]) + (beta * in[1] -> data[i]) + (gamma * in[2] -> data[i]);
+                    }
+                    else if (state.interp_rules[i] == interp_type::smooth) {
+                        color[i] = (alpha * in[0] -> data[i] / in[0] -> gl_Position[3]) 
+                        + (beta * in[1] -> data[i] / in[0] -> gl_Position[3])
+                        + (gamma * in[2] -> data[i] / in[0] -> gl_Position[3]);
+                    }
+                    else { //invalid
+                        color[i] = 1;
+                    }
+                }
+                if (alpha * a[2] + beta * b[2] + gamma * c[2] < state.image_depth[(j * state.image_width) + i]) {
+                    data_fragment temp_df;
+                    temp_df.data = color;
+                    data_output d;
+                    state.fragment_shader(temp_df, d, state.uniform_data);
+                    state.image_color[(j * state.image_width) + i] = make_pixel(255*d.output_color[0], 255*d.output_color[1], 255*d.output_color[2]);
+                    state.image_depth[(j * state.image_width) + i] = alpha * a[2] + beta * b[2] + gamma * c[2];
+                }
             }
         }
     }
