@@ -123,44 +123,44 @@ void clip_triangle(driver_state& state, const data_geometry* in[3],int face)
         return;
     }
 
-    float cnt = 0, ind = 0, val = 1;
+    float xyz = 0, pm = 1, cnt = 0; // xyz -> side, pm -> pos or neg (should have renamed it to pn but too late now)
     ivec3 inVec = {0, 0, 0};
-    if (face == 0) { 		// x = 1
-        ind = 0;
-        val = 1;
+    if (face == 0) { // x = 1
+        xyz = 0;
+        pm = 1;
     } 
     else if (face == 1) { // x = -1
-        ind = 0;
-        val = -1;
+        xyz = 0;
+        pm = -1;
     } 
     else if (face == 2) { // y = 1
-        ind = 1;
-        val = 1;
+        xyz = 1;
+        pm = 1;
     } 
     else if (face == 3) { // y = -1
-        ind = 1;
-        val = -1;
+        xyz = 1;
+        pm = -1;
     } 
     else if (face == 4) { // z = 1
-        ind = 2;
-        val = 1;
+        xyz = 2;
+        pm = 1;
     } 
     else if (face == 5) { // z = -1
-        ind = 2;
-        val = -1;
+        xyz = 2;
+        pm = -1;
     }
 
-    //If vertex is inside, set it's inVec value to 1 and increment a counter (inVec stores which vertex is inside, and the counter tells how many vertices are inside)
+    // check for intersections
     for (int i = 0; i < 3; i++) {
-        if (val < 0 && in[i]->gl_Position[ind] >= (val * in[i]->gl_Position[3])) {
+        if (pm < 0 && in[i]->gl_Position[xyz] >= (pm * in[i]->gl_Position[3])) {
             cnt++;
             inVec[i] = 1;
         } 
-        else if (val > 0 && in[i]->gl_Position[ind] <= (val * in[i]->gl_Position[3])) {
+        else if (pm > 0 && in[i]->gl_Position[xyz] <= (pm * in[i]->gl_Position[3])) {
             cnt++;
             inVec[i] = 1;
         }
-  }
+    }
 
     if (cnt == 0) {
         return;
@@ -180,9 +180,10 @@ void clip_triangle(driver_state& state, const data_geometry* in[3],int face)
         }
 
         float wA = A->gl_Position[3], wB = B->gl_Position[3], wC = C->gl_Position[3];
-        float aV = A->gl_Position[ind], bV = B->gl_Position[ind], cV = C->gl_Position[ind];
-        float alphaB = ((val * wB) - bV) / ((aV - (val * wA)) + ((val * wB) - bV));
-        float alphaC = ((val * wC) - cV) / ((aV - (val * wA)) + ((val * wC) - cV));
+        float aV = A->gl_Position[xyz], bV = B->gl_Position[xyz], cV = C->gl_Position[xyz];
+
+        float alphaB = ((pm * wB) - bV) / ((aV - (pm * wA)) + ((pm * wB) - bV));
+        float alphaC = ((pm * wC) - cV) / ((aV - (pm * wA)) + ((pm * wC) - cV));
 
         data_geometry* AB = new data_geometry();
         data_geometry* AC = new data_geometry();
@@ -236,9 +237,10 @@ void clip_triangle(driver_state& state, const data_geometry* in[3],int face)
         }
 
         float wA = A->gl_Position[3], wB = B->gl_Position[3], wC = C->gl_Position[3];
-        float aV = A->gl_Position[ind], bV = B->gl_Position[ind], cV = C->gl_Position[ind];
-        float alphaB = ((val * wB) - bV) / ((aV - (val * wA)) + ((val * wB) - bV));
-        float alphaC = ((val * wC) - cV) / ((aV - (val * wA)) + ((val * wC) - cV));
+        float aV = A->gl_Position[xyz], bV = B->gl_Position[xyz], cV = C->gl_Position[xyz];
+        
+        float alphaB = ((pm * wB) - bV) / ((aV - (pm * wA)) + ((pm * wB) - bV));
+        float alphaC = ((pm * wC) - cV) / ((aV - (pm * wA)) + ((pm * wC) - cV));
 
         data_geometry* AB = new data_geometry();
         data_geometry* AC = new data_geometry();
