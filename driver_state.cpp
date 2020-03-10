@@ -110,6 +110,9 @@ void render(driver_state& state, render_type type)
             }
         }
     }
+    else { // type == render_type::invalid
+        exit(1);
+    }
 }
 
 // This function clips a triangle (defined by the three vertices in the "in" array).
@@ -179,17 +182,19 @@ void clip_triangle(driver_state& state, const data_geometry* in[3],int face)
             }
         }
 
-        float wA = A->gl_Position[3], wB = B->gl_Position[3], wC = C->gl_Position[3];
-        float aV = A->gl_Position[xyz], bV = B->gl_Position[xyz], cV = C->gl_Position[xyz];
-
-        float alphaB = ((pm * wB) - bV) / ((aV - (pm * wA)) + ((pm * wB) - bV));
-        float alphaC = ((pm * wC) - cV) / ((aV - (pm * wA)) + ((pm * wC) - cV));
+        float alphaB = ((pm * B -> gl_Position[3]) - B -> gl_Position[xyz])
+                        / ((A -> gl_Position[xyz] - (pm * A -> gl_Position[3])) 
+                        + ((pm * B -> gl_Position[3]) - B -> gl_Position[xyz]));
+        float alphaC = ((pm * C -> gl_Position[3]) - C -> gl_Position[xyz]) 
+                        / ((A -> gl_Position[xyz] - (pm * A -> gl_Position[3])) 
+                        + ((pm * C -> gl_Position[3]) - C -> gl_Position[xyz]));
 
         data_geometry* AB = new data_geometry();
         data_geometry* AC = new data_geometry();
     
         AB->data = new float[state.floats_per_vertex];
         AC->data = new float[state.floats_per_vertex];
+        
         for (int i = 0; i < state.floats_per_vertex; i++) {
             if (state.interp_rules[i] == interp_type::flat) {
                 AB->data[i] = A->data[i];
@@ -202,9 +207,12 @@ void clip_triangle(driver_state& state, const data_geometry* in[3],int face)
             else if (state.interp_rules[i] == interp_type::noperspective) {
                 float k = (alphaB * A->gl_Position[3]) + ((1 - alphaB) * B->gl_Position[3]);
                 float alpha = (alphaB * A->gl_Position[3]) / k;
+                
                 AB->data[i] = (alpha * A->data[i]) + ((1 - alpha) * B->data[i]);
+                
                 k = (alphaC * A->gl_Position[3]) + ((1 - alphaC) * C->gl_Position[3]);
                 alpha = (alphaC * A->gl_Position[3]) / k;
+                
                 AC->data[i] = (alpha * A->data[i]) + ((1 - alpha) * C->data[i]);
             }
         }
@@ -212,7 +220,6 @@ void clip_triangle(driver_state& state, const data_geometry* in[3],int face)
             AB->gl_Position[i] = (alphaB * A->gl_Position[i]) + ((1 - alphaB) * B->gl_Position[i]);
             AC->gl_Position[i] = (alphaC * A->gl_Position[i]) + ((1 - alphaC) * C->gl_Position[i]);
         }
-
         const data_geometry* pass[3];
         pass[0] = A;
         pass[1] = AB;
@@ -236,17 +243,19 @@ void clip_triangle(driver_state& state, const data_geometry* in[3],int face)
             }
         }
 
-        float wA = A->gl_Position[3], wB = B->gl_Position[3], wC = C->gl_Position[3];
-        float aV = A->gl_Position[xyz], bV = B->gl_Position[xyz], cV = C->gl_Position[xyz];
-        
-        float alphaB = ((pm * wB) - bV) / ((aV - (pm * wA)) + ((pm * wB) - bV));
-        float alphaC = ((pm * wC) - cV) / ((aV - (pm * wA)) + ((pm * wC) - cV));
+        float alphaB = ((pm * B -> gl_Position[3]) - B -> gl_Position[xyz])
+                        / ((A -> gl_Position[xyz] - (pm * A -> gl_Position[3])) 
+                        + ((pm * B -> gl_Position[3]) - B -> gl_Position[xyz]));
+        float alphaC = ((pm * C -> gl_Position[3]) - C -> gl_Position[xyz]) 
+                        / ((A -> gl_Position[xyz] - (pm * A -> gl_Position[3])) 
+                        + ((pm * C -> gl_Position[3]) - C -> gl_Position[xyz]));
 
         data_geometry* AB = new data_geometry();
         data_geometry* AC = new data_geometry();
     
         AB->data = new float[state.floats_per_vertex];
         AC->data = new float[state.floats_per_vertex];
+        
         for (int i = 0; i < state.floats_per_vertex; i++) {
             if (state.interp_rules[i] == interp_type::flat) {
                 AB->data[i] = A->data[i];
@@ -259,9 +268,12 @@ void clip_triangle(driver_state& state, const data_geometry* in[3],int face)
             else if (state.interp_rules[i] == interp_type::noperspective) {
                 float k = (alphaB * A->gl_Position[3]) + ((1 - alphaB) * B->gl_Position[3]);
                 float alpha = (alphaB * A->gl_Position[3]) / k;
+        
                 AB->data[i] = (alpha * A->data[i]) + ((1 - alpha) * B->data[i]);
+        
                 k = (alphaC * A->gl_Position[3]) + ((1 - alphaC) * C->gl_Position[3]);
                 alpha = (alphaC * A->gl_Position[3]) / k;
+        
                 AC->data[i] = (alpha * A->data[i]) + ((1 - alpha) * C->data[i]);
             }
         }
@@ -286,6 +298,9 @@ void clip_triangle(driver_state& state, const data_geometry* in[3],int face)
         clip_triangle(state,in,face+1);
         return;
     } 
+    else {
+        exit(1);
+    }
 }
 
 // Rasterize the triangle defined by the three vertices in the "in" array.  This
@@ -347,8 +362,8 @@ void rasterize_triangle(driver_state& state, const data_geometry* in[3])
                         + (beta * in[1] -> data[i] / in[1] -> gl_Position[3])
                         + (gamma * in[2] -> data[i] / in[2] -> gl_Position[3])) / k;
                     }
-                    else { //invalid
-                        color[i] = 1;
+                    else { // type == render_type::invalid
+                        exit(1);
                     }
                 }
                 if (alpha * a[2] + beta * b[2] + gamma * c[2] < state.image_depth[(j * state.image_width) + i]) {
